@@ -1,0 +1,6 @@
+company.tothepoint.blog:
+  elastic:
+    cluster.name: bookstore-test-cluster
+    host:
+      url: localhost
+      port: 9300

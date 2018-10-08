@@ -1,0 +1,35 @@
+version: '2'
+services:
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - ./docker_data/mongo/data:/var/lib/mongodb
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:6.4.0
+    environment:
+      - cluster.name=bookstore-cluster
+      - xpack.security.enabled=false
+      - http.cors.enabled=true
+      - http.cors.allow-origin=*
+      - network.host=0.0.0.0
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    networks:
+      - docker_elk
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana:6.4.0
+    ports:
+      - "5601:5601"
+    links:
+      - elasticsearch
+    networks:
+      - docker_elk
+
+networks:
+  docker_elk:
+    driver: bridge

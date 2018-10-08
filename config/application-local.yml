@@ -1,0 +1,9 @@
+company.tothepoint.blog:
+  elastic:
+    cluster.name: bookstore-cluster
+    host:
+      url: localhost
+      port: 9300
+
+spring:
+  data.mongodb.database: bookstore
