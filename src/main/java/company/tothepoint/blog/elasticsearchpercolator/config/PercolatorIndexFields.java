@@ -6,8 +6,6 @@ import lombok.Getter;
 public enum PercolatorIndexFields {
 
     PERCOLATOR_QUERY("query", "percolator"),
-    EMAIL("email", "keyword"),
-    TITLE("title", "keyword"),
     AUTHOR("author", "keyword"),
     PRICE("sellingPrice", "double"),
     TYPE("bookType", "keyword"),

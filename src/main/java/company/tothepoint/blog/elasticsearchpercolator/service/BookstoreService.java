@@ -51,8 +51,6 @@ public class BookstoreService {
         elasticsearchClient.prepareIndex(PERCOLATOR_INDEX, PERCOLATOR_INDEX_MAPPING_TYPE, savedPreference.getSearchPreferenceId())
                 .setSource(jsonBuilder()
                         .startObject()
-                        .field("email", savedPreference.getEmail())
-                        .field("title", savedPreference.getTitle())
                         .field(PercolatorIndexFields.PERCOLATOR_QUERY.getFieldName(), bqb) // Register the query
                         .endObject())
                 .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // Needed when the query shall be available immediately
