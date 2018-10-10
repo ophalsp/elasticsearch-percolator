@@ -106,48 +106,48 @@ Multiple options are possible, you could create the index manually by sending a 
 
 ```java
 /**
-     * Create the index for the percolator data if it does not exist
-     */
-    @PostConstruct
-    public void initializePercolatorIndex() {
-        try {
-            Client client = elasticsearchClient();
+ * Create the index for the percolator data if it does not exist
+ */
+@PostConstruct
+public void initializePercolatorIndex() {
+    try {
+        Client client = elasticsearchClient();
 
-            IndicesExistsResponse indicesExistsResponse = client.admin().indices().prepareExists(PERCOLATOR_INDEX).get();
+        IndicesExistsResponse indicesExistsResponse = client.admin().indices().prepareExists(PERCOLATOR_INDEX).get();
 
-            if (indicesExistsResponse == null || !indicesExistsResponse.isExists()) {
-                XContentBuilder percolatorQueriesMapping = XContentFactory.jsonBuilder()
-                        .startObject()
-                        .startObject("properties");
+        if (indicesExistsResponse == null || !indicesExistsResponse.isExists()) {
+            XContentBuilder percolatorQueriesMapping = XContentFactory.jsonBuilder()
+                    .startObject()
+                    .startObject("properties");
 
-                Arrays.stream(PercolatorIndexFields.values())
-                        .forEach(field -> {
-                            try {
-                                percolatorQueriesMapping
-                                        .startObject(field.getFieldName())
-                                        .field("type", field.getFieldType())
-                                        .endObject();
-                            } catch (IOException e) {
-                                log.error(String.format("Error while adding field %s to mapping", field.name()), e);
-                                throw new RuntimeException(
-                                        String.format("Something went wrong while adding field %s to mapping", field.name()), e);
-                            }
-                        });
+            Arrays.stream(PercolatorIndexFields.values())
+                    .forEach(field -> {
+                        try {
+                            percolatorQueriesMapping
+                                    .startObject(field.getFieldName())
+                                    .field("type", field.getFieldType())
+                                    .endObject();
+                        } catch (IOException e) {
+                            log.error(String.format("Error while adding field %s to mapping", field.name()), e);
+                            throw new RuntimeException(
+                                    String.format("Something went wrong while adding field %s to mapping", field.name()), e);
+                        }
+                    });
 
-                percolatorQueriesMapping
-                        .endObject()
-                        .endObject();
+            percolatorQueriesMapping
+                    .endObject()
+                    .endObject();
 
-                client.admin().indices().prepareCreate(PERCOLATOR_INDEX)
-                        .addMapping(PERCOLATOR_INDEX_MAPPING_TYPE, percolatorQueriesMapping)
-                        .execute()
-                        .actionGet();
-            }
-        } catch (Exception e) {
-            log.error("Error while creating percolator index", e);
-            throw new RuntimeException("Something went wrong during the creation of the percolator index", e);
+            client.admin().indices().prepareCreate(PERCOLATOR_INDEX)
+                    .addMapping(PERCOLATOR_INDEX_MAPPING_TYPE, percolatorQueriesMapping)
+                    .execute()
+                    .actionGet();
         }
+    } catch (Exception e) {
+        log.error("Error while creating percolator index", e);
+        throw new RuntimeException("Something went wrong during the creation of the percolator index", e);
     }
+}
 ```
 
 Using the PostConstruct annotation that comes with Spring Boot, I initialise the index after dependency injection is terminated and before any other action is performed.
@@ -193,39 +193,39 @@ This will create the index using the following code:
 ```java
 BoolQueryBuilder bqb = QueryBuilders.boolQuery();
 
-        if (preference.getCriteria().getAuthor() != null) {
-            bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.AUTHOR.getFieldName(), preference.getCriteria().getAuthor()));
-        }
+if (preference.getCriteria().getAuthor() != null) {
+    bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.AUTHOR.getFieldName(), preference.getCriteria().getAuthor()));
+}
 
-        if (preference.getCriteria().getTypes() != null) {
-            bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.TYPE.getFieldName(), preference.getCriteria().getTypes()));
-        }
+if (preference.getCriteria().getTypes() != null) {
+    bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.TYPE.getFieldName(), preference.getCriteria().getTypes()));
+}
 
-        if (preference.getCriteria().getLanguage() != null) {
-            bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.LANGUAGE.getFieldName(), preference.getCriteria().getLanguage()));
-        }
+if (preference.getCriteria().getLanguage() != null) {
+    bqb.filter(QueryBuilders.termsQuery(PercolatorIndexFields.LANGUAGE.getFieldName(), preference.getCriteria().getLanguage()));
+}
 
-        if (preference.getCriteria().getMinimumPrice() != null && preference.getCriteria().getMaximumPrice() != null) {
-            bqb.filter(
-                    QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
-                            .gte(preference.getCriteria().getMinimumPrice().doubleValue())
-                            .lte(preference.getCriteria().getMaximumPrice().doubleValue()));
-        } else if (preference.getCriteria().getMinimumPrice() != null) {
-            bqb.filter(
-                    QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
-                            .gte(preference.getCriteria().getMinimumPrice().doubleValue()));
-        } else if (preference.getCriteria().getMaximumPrice() != null) {
-            bqb.filter(QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
+if (preference.getCriteria().getMinimumPrice() != null && preference.getCriteria().getMaximumPrice() != null) {
+    bqb.filter(
+            QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
+                    .gte(preference.getCriteria().getMinimumPrice().doubleValue())
                     .lte(preference.getCriteria().getMaximumPrice().doubleValue()));
-        }
+} else if (preference.getCriteria().getMinimumPrice() != null) {
+    bqb.filter(
+            QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
+                    .gte(preference.getCriteria().getMinimumPrice().doubleValue()));
+} else if (preference.getCriteria().getMaximumPrice() != null) {
+    bqb.filter(QueryBuilders.rangeQuery(PercolatorIndexFields.PRICE.getFieldName())
+            .lte(preference.getCriteria().getMaximumPrice().doubleValue()));
+}
 
-        elasticsearchClient.prepareIndex(PERCOLATOR_INDEX, PERCOLATOR_INDEX_MAPPING_TYPE, savedPreference.getSearchPreferenceId())
-                .setSource(jsonBuilder()
-                        .startObject()
-                        .field(PercolatorIndexFields.PERCOLATOR_QUERY.getFieldName(), bqb) // Register the query
-                        .endObject())
-                .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // Needed when the query shall be available immediately
-                .get();
+elasticsearchClient.prepareIndex(PERCOLATOR_INDEX, PERCOLATOR_INDEX_MAPPING_TYPE, savedPreference.getSearchPreferenceId())
+        .setSource(jsonBuilder()
+                .startObject()
+                .field(PercolatorIndexFields.PERCOLATOR_QUERY.getFieldName(), bqb) // Register the query
+                .endObject())
+        .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE) // Needed when the query shall be available immediately
+        .get();
 ```
 
 ### Third step: upload a book
@@ -249,21 +249,21 @@ Now of course we would like to see if the system works, try and send a request t
 The code achieving this looks like this:
 ```java 
 XContentBuilder docBuilder = XContentFactory.jsonBuilder().startObject();
-            docBuilder.field(PercolatorIndexFields.AUTHOR.getFieldName(), book.getAuthor());
-            docBuilder.field(PercolatorIndexFields.LANGUAGE.getFieldName(), book.getLanguage().name());
-            docBuilder.field(PercolatorIndexFields.PRICE.getFieldName(), book.getPrice());
-            docBuilder.field(PercolatorIndexFields.TYPE.getFieldName(), book.getType());
-            docBuilder.endObject();
+docBuilder.field(PercolatorIndexFields.AUTHOR.getFieldName(), book.getAuthor());
+docBuilder.field(PercolatorIndexFields.LANGUAGE.getFieldName(), book.getLanguage().name());
+docBuilder.field(PercolatorIndexFields.PRICE.getFieldName(), book.getPrice());
+docBuilder.field(PercolatorIndexFields.TYPE.getFieldName(), book.getType());
+docBuilder.endObject();
 
-            PercolateQueryBuilder percolateQuery = new PercolateQueryBuilder(PercolatorIndexFields.PERCOLATOR_QUERY.getFieldName(),
-                    BytesReference.bytes(docBuilder),
-                    XContentType.JSON);
+PercolateQueryBuilder percolateQuery = new PercolateQueryBuilder(PercolatorIndexFields.PERCOLATOR_QUERY.getFieldName(),
+        BytesReference.bytes(docBuilder),
+        XContentType.JSON);
 
-            // Percolate, by executing the percolator query in the query dsl:
-            SearchResponse searchResponse = elasticsearchClient.prepareSearch(PERCOLATOR_INDEX)
-                    .setQuery(percolateQuery)
-                    .execute()
-                    .actionGet();
+// Percolate, by executing the percolator query in the query dsl:
+SearchResponse searchResponse = elasticsearchClient.prepareSearch(PERCOLATOR_INDEX)
+        .setQuery(percolateQuery)
+        .execute()
+        .actionGet();
 ```
 
 So what I do here is:
